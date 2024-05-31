@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flares</title>
+    <!-- Include D3.js -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+    <h1>Gráficos de flares</h1>
+=    <div id="output"></div>
+
+    <script>
+        // Load the CSV file
+        d3.csv("flares.csv").then(function(data) {
+            // Display the data
+            displayData(data);
+            // Create and display the treemap
+            createTreemap(data);
+            // Create and display the radial layout
+            createRadialLayout(data);
+            // Create and display the partition layout
+            createPartitionLayout(data);
+        }).catch(function(error) {
+            // Handle any errors
+            console.error("Error loading the CSV file:", error);
+        });
+
+        // Function to display the data
+        function displayData(data) {
+            // Select the output div
+            var outputDiv = d3.select("#output");
+        }
+
+        // Function to create the treemap
+        function createTreemap(data) {
+            // Define the size of the treemap
+            var width = 800;
+            var height = 300;
+
+            // Create a color scale
+            var color = d3.scaleOrdinal(d3.schemeCategory10);
+
+            // Create a treemap layout
+            var treemap = d3.treemap()
+                .size([width, height])
+                .padding(1)
+                .round(true);
+
+            // Convert the data to hierarchical structure
+            var root = d3.hierarchy({ children: data })
+                .sum(function(d) { return +d.value; }) // Sum the values for each node
+                .sort(function(a, b) { return b.value - a.value; }); // Sort by value
+
+            // Generate the treemap nodes
+            treemap(root);
+
+            // Select the output div
+            var outputDiv = d3.select("#output");
+
+            // Create an SVG element for the treemap
+            var svg = outputDiv.append("svg")
+                .attr("width", width)
+                .attr("height", height)
+                .style("border", "1px solid #ccc");
+
+            // Create groups for each node
+            var nodes = svg.selectAll(".node")
+                .data(root.leaves())
+                .enter().append("g")
+                .attr("class", "node")
+                .attr("transform", function(d) { return "translate(" + d.x0 + "," + d.y0 + ")"; });
+
+            // Create rectangles for each leaf node
+            nodes.append("rect")
+                .attr("width", function(d) { return d.x1 - d.x0; })
+                .attr("height", function(d) { return d.y1 - d.y0; })
+                .style("fill", function(d) { return color(d.parent.data.id); });
+
+            // Add tooltips
+            nodes.append("title")
+                .text(function(d) { return d.data.id + "\n" + d.data.value; });
+        }
+
+        // Function to create the radial layout
+        function createRadialLayout(data) {
+            // Define the size of the radial layout
+            var diameter = 600;
+
+            // Create a color scale
+            var color = d3.scaleOrdinal(d3.schemeCategory10);
+
+            // Create a partition layout
+            var partition = d3.partition()
+                .size([2 * Math.PI, diameter / 2]);
+
+            // Convert the data to hierarchical structure
+            var root = d3.hierarchy({ children: data })
+                .sum(function(d) { return +d.value; }) // Sum the values for each node
+                .sort(function(a, b) { return b.value - a.value; }); // Sort by value
+
+            // Generate the partition nodes
+            partition(root);
+
+            // Select the output div
+            var outputDiv = d3.select("#output");
+
+            // Create an SVG element for the radial layout
+            var svg = outputDiv.append("svg")
+                .attr("width", diameter)
+                .attr("height", diameter)
+                .style("border", "1px solid #ccc")
+                .append("g")
+                .attr("transform", "translate(" + diameter / 2 + "," + diameter / 2 + ")");
+
+            // Create arcs for each node
+            var arcs = svg.selectAll("path")
+                .data(root.descendants())
+                .enter().append("path")
+                .attr("d", d3.arc()
+                    .startAngle(function(d) { return d.x0; })
+                    .endAngle(function(d) { return d.x1; })
+                    .innerRadius(function(d) { return d.y0; })
+                    .outerRadius(function(d) { return d.y1; })
+                )
+                .style("fill", function(d) { return color(d.data.id); });
+
+            // Add tooltips
+            arcs.append("title")
+                .text(function(d) { return d.data.id + "\n" + d.data.value; });
+        }
+
+        // Function to create the partition layout
+        function createPartitionLayout(data) {
+            // Define the size of the partition layout
+            var width = 800;
+            var height = 300;
+
+            // Create a color scale
+            var color = d3.scaleOrdinal(d3.schemeCategory10);
+
+            // Create a partition layout
+            var partition = d3.partition()
+                .size([width, height])
+                .padding(1)
+                .round(true);
+
+            // Convert the data to hierarchical structure
+            var root = d3.hierarchy({ children: data })
+                .sum(function(d) { return +d.value; }) // Sum the values for each node
+                .sort(function(a, b) { return b.value - a.value; }); // Sort by value
+
+            // Generate the partition nodes
+            partition(root);
+
+            // Select the output div
+            var outputDiv = d3.select("#output");
+
+            // Create an SVG element for the partition layout
+            var svg = outputDiv.append("svg")
+                .attr("width", width)
+                .attr("height", height)
+                .style("border", "1px solid #ccc");
+
+            // Create groups for each node
+            var nodes = svg.selectAll(".node")
+                .data(root.descendants())
+                .enter().append("g")
+                .attr("class", "node")
+                .attr("transform", function(d) { return "translate(" + d.x0 + "," + d.y0 + ")"; });
+
+            // Create rectangles for each node
+            nodes.append("rect")
+                .attr("width", function(d) { return d.x1 - d.x0; })
+                .attr("height", function(d) { return d.y1 - d.y0; })
+                .style("fill", function(d) { return color(d.data.id); });
+
+            // Add tooltips
+            nodes.append("title")
+                .text(function(d) { return d.data.id + "\n" + d.data.value; });
+        }
+    </script>
+</body>
+</html>
